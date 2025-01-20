@@ -10,25 +10,40 @@ void main() {
 class ShutdownController extends GetxController {
   Rx<int> remainingTime = 0.obs; // Tempo rimanente in secondi
   late Timer _timer;
+  Rx<bool> timerStarted = false.obs;
 
-  // Metodo per iniziare il countdown
-  void startTimer(DateTime shutdownTime) {
+  void setTimer(DateTime shutdownTime) {
     final currentTime = DateTime.now();
     remainingTime.value = shutdownTime.difference(currentTime).inSeconds;
+    debugPrint(remainingTime.value.toString());
+  }
+
+  // Metodo per iniziare il countdown
+  void startTimer() {
+    if (timerStarted.value) {
+      timerStarted.value = false;
+    } else {
+      timerStarted.value = true;
+    }
 
     // Se il tempo è già scaduto, esegui immediatamente lo spegnimento
     if (remainingTime.value.isNegative) {
-      _shutdown();
+      //  _shutdown();
+      debugPrint('shutdown!');
       return;
     }
 
     // Avvia il timer per aggiornare il countdown
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-      if (remainingTime.value > 0) {
+      if (timerStarted.value && remainingTime.value > 0) {
         remainingTime.value--;
+      } else if (!timerStarted.value) {
+        timer.cancel();
+        debugPrint('timer cancelled!');
       } else {
         timer.cancel();
-        _shutdown();
+        //_shutdown();
+        debugPrint('shutdown!');
       }
     });
   }
@@ -62,7 +77,7 @@ class ShutdownTimerScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Spegniti GUI'),
+        title: Text('Spegniti APP'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -73,37 +88,58 @@ class ShutdownTimerScreen extends StatelessWidget {
             TextField(
               controller: timeController,
               decoration: InputDecoration(
-                labelText: "Inserisci l'ora di spegnimento (HH:MM)",
-                border: OutlineInputBorder(),
-              ),
+                  labelText: "Inserisci l'ora di spegnimento (HH:MM)",
+                  border: OutlineInputBorder(),
+                  icon: const Icon(Icons.access_alarms)),
               keyboardType: TextInputType.datetime,
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                print("Click!!!");
-                final inputTime = timeController.text.trim();
+              onSubmitted: (value) {
+                final inputTime = value.trim();
                 if (inputTime.isEmpty) return;
-
                 final now = DateTime.now();
-                final targetTime = DateTime(
+                DateTime targetTime = DateTime(
                     now.year,
                     now.month,
                     now.day,
                     int.parse(inputTime.split(":")[0]),
                     int.parse(inputTime.split(":")[1]));
-                print(now.toString() + ' - ' + targetTime.toString());
-                /*Get.defaultDialog(
-                    middleText: targetTime.toString(),
-                    title: 'ATTENZIONE!',
-                    textConfirm: 'Shutdown partito!');*/
+                debugPrint('$now - $targetTime');
                 if (targetTime.isBefore(now)) {
                   // Se l'ora inserita è già passata, impostiamo il giorno successivo
-                  targetTime.add(Duration(days: 1));
+                  targetTime = targetTime.add(Duration(days: 1));
+                  debugPrint('is before!');
                 }
-                controller.startTimer(targetTime);
+                controller.setTimer(targetTime);
               },
-              child: Text('Avvia il Timer!'),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                final inputTime = timeController.text.trim();
+                if (inputTime.isEmpty) return;
+                final now = DateTime.now();
+                DateTime targetTime = DateTime(
+                    now.year,
+                    now.month,
+                    now.day,
+                    int.parse(inputTime.split(":")[0]),
+                    int.parse(inputTime.split(":")[1]));
+                //debugPrint('1° $now - $targetTime');
+                if (targetTime.isBefore(now)) {
+                  // Se l'ora inserita è già passata, impostiamo il giorno successivo
+                  targetTime = targetTime.add(Duration(days: 1));
+                  debugPrint('is before!');
+                }
+                debugPrint('$now - $targetTime');
+                controller.setTimer(targetTime);
+                controller.startTimer();
+              },
+              child: Obx(() {
+                if (!controller.timerStarted.value) {
+                  return Text('Avvia il Timer!');
+                } else {
+                  return Text('Ferma il Timer!');
+                }
+              }),
             ),
             SizedBox(height: 20),
             Obx(() {
