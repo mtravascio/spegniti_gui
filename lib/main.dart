@@ -11,10 +11,30 @@ class ShutdownController extends GetxController {
   Rx<int> remainingTime = 0.obs; // Tempo rimanente in secondi
   late Timer _timer;
   Rx<bool> timerStarted = false.obs;
-
+  Rx<TimeOfDay> targetTime = TimeOfDay(hour: 00, minute: 00).obs;
+/*
   void setTimer(DateTime shutdownTime) {
     final currentTime = DateTime.now();
     remainingTime.value = shutdownTime.difference(currentTime).inSeconds;
+    debugPrint(remainingTime.value.toString());
+  }
+*/
+  void setTimer(TimeOfDay shutdownTime) {
+    targetTime.value = shutdownTime;
+    final currentDateTime = DateTime.now();
+    DateTime targetDateTime = DateTime(
+        currentDateTime.year,
+        currentDateTime.month,
+        currentDateTime.day,
+        shutdownTime.hour,
+        shutdownTime.minute);
+    debugPrint('$currentDateTime - $targetDateTime');
+    if (targetDateTime.isBefore(currentDateTime)) {
+      // Se l'ora inserita è già passata, impostiamo il giorno successivo
+      targetDateTime = targetDateTime.add(Duration(days: 1));
+      debugPrint('is before!');
+    }
+    remainingTime.value = targetDateTime.difference(currentDateTime).inSeconds;
     debugPrint(remainingTime.value.toString());
   }
 
@@ -42,7 +62,7 @@ class ShutdownController extends GetxController {
         debugPrint('timer cancelled!');
       } else {
         timer.cancel();
-        //_shutdown();
+        // _shutdown();
         debugPrint('shutdown!');
       }
     });
@@ -77,7 +97,10 @@ class ShutdownTimerScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Spegniti APP'),
+        title: Text(style: TextStyle(color: Colors.white), 'Spegniti! APP'),
+        backgroundColor: Colors.blue,
+        leading: const Icon(Icons.access_alarm_rounded),
+        centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -85,61 +108,66 @@ class ShutdownTimerScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            TextField(
-              controller: timeController,
-              decoration: InputDecoration(
-                  labelText: "Inserisci l'ora di spegnimento (HH:MM)",
-                  border: OutlineInputBorder(),
-                  icon: const Icon(Icons.access_alarms)),
-              keyboardType: TextInputType.datetime,
-              onSubmitted: (value) {
-                final inputTime = value.trim();
-                if (inputTime.isEmpty) return;
-                final now = DateTime.now();
-                DateTime targetTime = DateTime(
-                    now.year,
-                    now.month,
-                    now.day,
-                    int.parse(inputTime.split(":")[0]),
-                    int.parse(inputTime.split(":")[1]));
-                debugPrint('$now - $targetTime');
-                if (targetTime.isBefore(now)) {
-                  // Se l'ora inserita è già passata, impostiamo il giorno successivo
-                  targetTime = targetTime.add(Duration(days: 1));
-                  debugPrint('is before!');
-                }
-                controller.setTimer(targetTime);
-              },
-            ),
+            ElevatedButton(
+                onPressed: () {
+                  final DateTime now = DateTime.now();
+                  showTimePicker(
+                          context: context,
+                          initialTime:
+                              TimeOfDay(hour: now.hour, minute: now.minute))
+                      .then((TimeOfDay? value) {
+                    if (value != null) {
+                      /*ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(value.format(context)),
+                        //action: SnackBarAction(label: 'OK', onPressed: () {}),
+                      ));*/
+                      //debugPrint(value.format(context));
+                      controller.setTimer(value);
+                    }
+                  });
+                },
+                child: const Text("Set Time!")),
+            SizedBox(height: 20),
+            Obx(() {
+              timeController.text =
+                  controller.targetTime.value.format(context).toString();
+              return TextField(
+                  controller: timeController,
+                  decoration: InputDecoration(
+                      labelText: '(HH:MM)',
+                      border: OutlineInputBorder(),
+                      icon: const Icon(Icons.access_alarms)),
+                  keyboardType: TextInputType.datetime,
+                  onSubmitted: (value) {
+                    final inputTime = value.trim();
+                    if (inputTime.isNotEmpty) {
+                      TimeOfDay targetTime = TimeOfDay(
+                          hour: int.parse(inputTime.split(":")[0]),
+                          minute: int.parse(inputTime.split(":")[1]));
+                      controller.setTimer(targetTime);
+                    }
+                  });
+            }),
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                final inputTime = timeController.text.trim();
-                if (inputTime.isEmpty) return;
-                final now = DateTime.now();
-                DateTime targetTime = DateTime(
-                    now.year,
-                    now.month,
-                    now.day,
-                    int.parse(inputTime.split(":")[0]),
-                    int.parse(inputTime.split(":")[1]));
-                //debugPrint('1° $now - $targetTime');
-                if (targetTime.isBefore(now)) {
-                  // Se l'ora inserita è già passata, impostiamo il giorno successivo
-                  targetTime = targetTime.add(Duration(days: 1));
-                  debugPrint('is before!');
-                }
-                debugPrint('$now - $targetTime');
-                controller.setTimer(targetTime);
                 controller.startTimer();
               },
               child: Obx(() {
                 if (!controller.timerStarted.value) {
-                  return Text('Avvia il Timer!');
+                  return Text('Start Timer!');
                 } else {
-                  return Text('Ferma il Timer!');
+                  return Text('Stop Timer!');
                 }
               }),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                //controller._shutdown();
+                debugPrint('shutdown!');
+              },
+              child: Text('Now!'),
             ),
             SizedBox(height: 20),
             Obx(() {
@@ -149,7 +177,7 @@ class ShutdownTimerScreen extends StatelessWidget {
               final seconds = remaining % 60;
 
               return Text(
-                'Tempo rimanente: ${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
+                'Countdown: ${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
                 style: TextStyle(fontSize: 24),
               );
             }),
