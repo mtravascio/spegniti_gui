@@ -1,9 +1,20 @@
+//import 'dart:ffi';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'dart:async';
 import 'dart:io';
 
+import 'package:desktop_window/desktop_window.dart';
+
 void main() {
+  //Size(800, 600);
+  WidgetsFlutterBinding.ensureInitialized();
+  //DesktopWindow.setMinWindowSize(Size(300, 300)); // Imposta la dimensione minima della finestra
+  //DesktopWindow.setMaxWindowSize(Size(800, 800)); // Imposta la dimensione massima della finestra
+  DesktopWindow.setWindowSize(Size(400, 500));
+  //DesktopWindow.setBorders(false);
   runApp(GetMaterialApp(home: ShutdownTimerScreen()));
 }
 
@@ -70,15 +81,19 @@ class ShutdownController extends GetxController {
 
   // Metodo per spegnere il sistema
   Future<void> _shutdown() async {
-    // A seconda del sistema operativo, esegui il comando di spegnimento
-    if (Platform.isWindows) {
-      await Process.run('shutdown', ['/f', '/s', '/t', '0']).then((result) {});
-    } else if (Platform.isLinux) {
-      await Process.run('poweroff', []);
-    } else if (Platform.isMacOS) {
-      var process = await Process.start('sudo', ['-S', 'shutdown', '-h', 'now'],
-          mode: ProcessStartMode.normal);
-      process.stdin.writeln('password');
+    if (!kIsWeb) {
+      // A seconda del sistema operativo, esegui il comando di spegnimento
+      if (Platform.isWindows) {
+        await Process.run('shutdown', ['/f', '/s', '/t', '0'])
+            .then((result) {});
+      } else if (Platform.isLinux) {
+        await Process.run('poweroff', []);
+      } else if (Platform.isMacOS) {
+        var process = await Process.start(
+            'sudo', ['-S', 'shutdown', '-h', 'now'],
+            mode: ProcessStartMode.normal);
+        process.stdin.writeln('password');
+      }
     }
   }
 
@@ -95,6 +110,8 @@ class ShutdownTimerScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+//    double width = MediaQuery.of(context).size.width;
+//    double height = MediaQuery.of(context).size.height;
     return Scaffold(
       appBar: AppBar(
         title: Text(style: TextStyle(color: Colors.white), 'Spegniti! APP'),
@@ -102,88 +119,94 @@ class ShutdownTimerScreen extends StatelessWidget {
         leading: const Icon(Icons.access_alarm_rounded),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            ElevatedButton(
-                onPressed: () {
-                  final DateTime now = DateTime.now();
-                  showTimePicker(
-                          context: context,
-                          initialTime:
-                              TimeOfDay(hour: now.hour, minute: now.minute))
-                      .then((TimeOfDay? value) {
-                    if (value != null) {
-                      /*ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      body: Container(
+        //width: width * 0.8,
+        //height: height * 0.5,
+        //child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                  onPressed: () {
+                    final DateTime now = DateTime.now();
+                    showTimePicker(
+                            context: context,
+                            initialTime:
+                                TimeOfDay(hour: now.hour, minute: now.minute))
+                        .then((TimeOfDay? value) {
+                      if (value != null) {
+                        /*ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                         content: Text(value.format(context)),
                         //action: SnackBarAction(label: 'OK', onPressed: () {}),
                       ));*/
-                      //debugPrint(value.format(context));
-                      controller.setTimer(value);
-                    }
-                  });
-                },
-                child: const Text("Set Time!")),
-            SizedBox(height: 20),
-            Obx(() {
-              timeController.text =
-                  controller.targetTime.value.format(context).toString();
-              return TextField(
-                  controller: timeController,
-                  decoration: InputDecoration(
-                      labelText: '(HH:MM)',
-                      border: OutlineInputBorder(),
-                      icon: const Icon(Icons.access_alarms)),
-                  keyboardType: TextInputType.datetime,
-                  onSubmitted: (value) {
-                    final inputTime = value.trim();
-                    if (inputTime.isNotEmpty) {
-                      TimeOfDay targetTime = TimeOfDay(
-                          hour: int.parse(inputTime.split(":")[0]),
-                          minute: int.parse(inputTime.split(":")[1]));
-                      controller.setTimer(targetTime);
-                    }
-                  });
-            }),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                controller.startTimer();
-              },
-              child: Obx(() {
-                if (!controller.timerStarted.value) {
-                  return Text('Start Timer!');
-                } else {
-                  return Text('Stop Timer!');
-                }
+                        //debugPrint(value.format(context));
+                        controller.setTimer(value);
+                      }
+                    });
+                  },
+                  child: const Text("Set Time!")),
+              SizedBox(height: 20),
+              Obx(() {
+                timeController.text =
+                    controller.targetTime.value.format(context).toString();
+                return TextField(
+                    controller: timeController,
+                    decoration: InputDecoration(
+                        labelText: '(HH:MM)',
+                        border: OutlineInputBorder(),
+                        icon: const Icon(Icons.access_alarms)),
+                    keyboardType: TextInputType.datetime,
+                    onSubmitted: (value) {
+                      final inputTime = value.trim();
+                      if (inputTime.isNotEmpty) {
+                        TimeOfDay targetTime = TimeOfDay(
+                            hour: int.parse(inputTime.split(":")[0]),
+                            minute: int.parse(inputTime.split(":")[1]));
+                        controller.setTimer(targetTime);
+                      }
+                    });
               }),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                //controller._shutdown();
-                debugPrint('shutdown!');
-              },
-              child: Text('Now!'),
-            ),
-            SizedBox(height: 20),
-            Obx(() {
-              final remaining = controller.remainingTime.value;
-              final hours = (remaining / 3600).floor();
-              final minutes = ((remaining % 3600) / 60).floor();
-              final seconds = remaining % 60;
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  controller.startTimer();
+                },
+                child: Obx(() {
+                  if (!controller.timerStarted.value) {
+                    return Text('Start Timer!');
+                  } else {
+                    return Text('Stop Timer!');
+                  }
+                }),
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  //controller._shutdown();
+                  debugPrint('shutdown!');
+                },
+                child: Text('Now!'),
+              ),
+              SizedBox(height: 20),
+              Obx(() {
+                final remaining = controller.remainingTime.value;
+                final hours = (remaining / 3600).floor();
+                final minutes = ((remaining % 3600) / 60).floor();
+                final seconds = remaining % 60;
 
-              return Text(
-                'Countdown: ${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
-                style: TextStyle(fontSize: 24),
-              );
-            }),
-          ],
+                return Text(
+                  'Countdown: ${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
+                  style: TextStyle(fontSize: 24),
+                );
+              }),
+            ],
+          ),
         ),
       ),
+      //),
     );
   }
 }
