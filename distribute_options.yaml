@@ -1,0 +1,31 @@
+output: dist/
+
+releases:
+  - name: linux
+    jobs:
+      - name: build-deb
+        package:
+          platform: linux
+          target: deb
+      - name: build-appimage
+        package:
+          platform: linux
+          target: appimage
+      - name: build-zip
+        package:
+          platform: linux
+          target: zip
+
+  - name: windows
+    jobs:
+      - name: build-exe
+        package:
+          platform: windows
+          target: exe
+
+  - name: macos
+    jobs:
+      - name: build-dmg
+        package:
+          platform: macos
+          target: dmg

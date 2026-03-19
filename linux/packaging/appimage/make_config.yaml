@@ -1,0 +1,17 @@
+display_name: Spegniti
+icon: assets/icon.png
+generic_name: System Shutdown Timer
+
+keywords:
+  - shutdown
+  - timer
+  - poweroff
+  - system
+
+categories:
+  - Utility
+  - System
+
+startup_notify: true
+
+include: []

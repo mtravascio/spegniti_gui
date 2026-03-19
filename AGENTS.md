@@ -5,7 +5,7 @@ Flutter desktop application for scheduling system shutdown. Uses GetX for state 
 
 ## Build Commands
 
-### Flutter SDK
+### Flutter SDK (via FVM)
 ```bash
 # Use Flutter from FVM (Flutter Version Management)
 fvm flutter <command>
@@ -14,55 +14,64 @@ fvm flutter <command>
 flutter <command>
 ```
 
-### Build
+### Standard Flutter Build
 ```bash
 # Debug build (Linux)
 flutter build linux --debug
 
 # Release build (Linux)
 flutter build linux --release
+```
 
-# Build for specific target
-flutter build linux --release --target-platform <platform>
+### Fastforge Packaging (Recommended)
+Fastforge is used for creating distributable packages (.deb, .zip, .exe, .dmg).
+
+**Note:** AppImage requires an icon file which this project doesn't have. Use DEB or ZIP instead.
+
+```bash
+# Install fastforge (if not already installed)
+dart pub global activate fastforge
+
+# Build Linux packages (deb, zip)
+fastforge package --platform=linux --targets=deb,zip
+
+# Build all at once using distribute_options.yaml
+fastforge release --name linux
+```
+
+### Using Build Scripts
+```bash
+# Make scripts executable
+chmod +x scripts/*.sh
+
+# Build for Linux (deb, zip)
+./scripts/build_linux.sh
+
+# Build for Windows (exe) - requires Wine + Inno Setup on Linux
+./scripts/build_windows.sh
+
+# Build for macOS (dmg) - only works on macOS
+./scripts/build_macos.sh
 ```
 
 ### Lint & Analyze
 ```bash
-# Run static analysis
 flutter analyze
-
-# Run with verbose output
 flutter analyze -v
-
-# Analyze specific file/directory
 flutter analyze lib/main.dart
 ```
 
 ### Test
 ```bash
-# Run all tests
 flutter test
-
-# Run a single test file
 flutter test test/widget_test.dart
-
-# Run tests with coverage
 flutter test --coverage
-
-# Run tests with specific reporter
-flutter test --reporter expanded
 ```
 
 ### Clean & Rebuild
 ```bash
-# Clean build artifacts
 flutter clean
-
-# Get dependencies
 flutter pub get
-
-# Upgrade dependencies
-flutter pub upgrade
 ```
 
 ## Code Style Guidelines
@@ -140,7 +149,7 @@ if (Platform.isWindows) {
 }
 ```
 
-### File Organization
+## File Organization
 ```
 lib/
   main.dart                 # App entry point
@@ -152,13 +161,25 @@ lib/
     services/              # Business logic services
 test/
   widget_test.dart         # Widget tests
+linux/packaging/deb/      # DEB packaging config
+windows/packaging/exe/    # Windows EXE packaging config
+macos/packaging/dmg/      # macOS DMG packaging config
+scripts/                   # Build scripts
+distribute_options.yaml    # Fastforge release config
 ```
 
-### Annotations & Ignore Comments
-```dart
-// ignore: avoid_print  # When necessary to suppress lint
-// ignore_for_file: avoid_print  # For entire file
-```
+## Packaging with Fastforge
+
+### Supported Formats
+- **Linux**: `.deb` (works), `.zip` (works), `.appimage` (requires icon)
+- **Windows**: `.exe` (requires Inno Setup + Wine on Linux)
+- **macOS**: `.dmg` (only works on macOS)
+
+### Configuration Files
+- `linux/packaging/deb/make_config.yaml` - DEB package metadata
+- `windows/packaging/exe/make_config.yaml` - Windows installer config
+- `macos/packaging/dmg/make_config.yaml` - macOS disk image config
+- `distribute_options.yaml` - Release automation config
 
 ## Development Notes
 
@@ -172,12 +193,6 @@ test/
 
 ### Flutter Version
 Managed via FVM. Run `fvm flutter` commands instead of `flutter` when FVM is configured.
-
-### Code Analysis
-The project uses `package:flutter_lints/flutter.yaml` which includes:
-- Effective Dart recommendations
-- Flutter-specific best practices
-- Common anti-patterns to avoid
 
 ## Common Tasks
 

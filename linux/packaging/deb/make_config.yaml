@@ -1,0 +1,23 @@
+display_name: Spegniti
+package_name: spegniti-gui
+maintainer:
+  name: Spegniti Developer
+  email: developer@example.com
+priority: optional
+section: x11
+installed_size: 24400
+essential: false
+
+keywords:
+  - shutdown
+  - timer
+  - poweroff
+  - system
+
+generic_name: System Shutdown Timer
+
+categories:
+  - Utility
+  - System
+
+startup_notify: true
